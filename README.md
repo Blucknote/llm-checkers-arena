@@ -2,38 +2,12 @@
 
 A simple web-based checkers game powered by JavaScript, HTML, and CSS.
 
-## Features
+<img width="482" alt="image" src="https://github.com/user-attachments/assets/a26c2d8b-f451-4d14-aa4c-46a25382bb20" />
 
-- Interactive checkers board in the browser
-- Modern UI with responsive design
-- Written in vanilla JavaScript, HTML, and CSS
 
-## Getting Started
-
-1. Clone the repository:
-   ```bash
-   git clone <repo-url>
-   cd llm-checkers
-   ```
-
-2. Open the game in your browser:
-   ```bash
-   open frontend/index.html
-   ```
-   Or simply double-click `frontend/index.html`.
-
-## Project Structure
-
-```
-llm-checkers/
-├── LICENSE
-├── README.md
-└── frontend/
-    ├── index.html
-    ├── main.js
-    └── style.css
-```
+## Use imideatly
+https://blucknote.github.io/llm-checkers-arena/
 
 ## License
 
-This project is licensed under the terms of the LICENSE file.
+MIT
