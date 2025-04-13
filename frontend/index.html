@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LLM Checkers Arena</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>LLM Checkers Arena</h1>
+        <div class="header-actions">
+            <button id="leaderboard-btn">Leaderboard</button>
+            <button id="add-board-btn">Add Board</button>
+            <button id="refresh-models-btn">Refresh Models</button>
+            <span id="models-status" style="margin-left:1rem; font-size:0.95em; color:#555;"></span>
+        </div>
+    </header>
+    <main>
+        <div id="boards-container"></div>
+    </main>
+    <div id="leaderboard-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-leaderboard" class="close">&times;</span>
+            <h2>Leaderboard</h2>
+            <div id="leaderboard-content"></div>
+        </div>
+    </div>
+    <div id="api-key-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-api-key" class="close">&times;</span>
+            <h2>OpenRouter API Key</h2>
+            <p>Enter your OpenRouter API key to enable LLM moves:</p>
+            <input type="password" id="api-key-input" style="width: 100%; margin-bottom: 1rem;" />
+            <button id="save-api-key-btn">Save Key</button>
+            <div style="margin-top:0.5rem;">
+                <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" style="font-size:0.95em;">Get your
+                    key from openrouter.ai</a>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
