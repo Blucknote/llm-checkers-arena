@@ -563,32 +563,179 @@ function hasAvailableCapture(state, turn) {
             const row = Math.floor(i / 8);
             const col = i % 8;
             for (const [dr, dc] of directions) {
-                // Regular pieces can only move forward
                 if (piece === 1 && dr !== -1) continue;
                 if (piece === 2 && dr !== 1) continue;
-                const midRow = row + dr;
-                const midCol = col + dc;
-                const toRow = row + 2 * dr;
-                const toCol = col + 2 * dc;
-                if (
-                    midRow >= 0 && midRow < 8 && midCol >= 0 && midCol < 8 &&
-                    toRow >= 0 && toRow < 8 && toCol >= 0 && toCol < 8
-                ) {
-                    const midIdx = midRow * 8 + midCol;
-                    const toIdx = toRow * 8 + toCol;
-                    const midPiece = state.board[midIdx];
-                    const toPiece = state.board[toIdx];
-                    // Check if midPiece is opponent and toPiece is empty
+                // Normal pieces (one jump)
+                if (piece === 1 || piece === 2) {
+                    const midRow = row + dr;
+                    const midCol = col + dc;
+                    const toRow = row + 2 * dr;
+                    const toCol = col + 2 * dc;
                     if (
-                        toPiece === 0 &&
-                        (
-                            (turn === 1 && (midPiece === 2 || midPiece === 4)) ||
-                            (turn === 2 && (midPiece === 1 || midPiece === 3))
-                        )
+                        midRow >= 0 && midRow < 8 && midCol >= 0 && midCol < 8 &&
+                        toRow >= 0 && toRow < 8 && toCol >= 0 && toCol < 8
                     ) {
-                        return true;
+                        const midIdx = midRow * 8 + midCol;
+                        const toIdx = toRow * 8 + toCol;
+                        const midPiece = state.board[midIdx];
+                        const toPiece = state.board[toIdx];
+                        if (
+                            toPiece === 0 &&
+                            (
+                                (turn === 1 && (midPiece === 2 || midPiece === 4)) ||
+                                (turn === 2 && (midPiece === 1 || midPiece === 3))
+                            )
+                        ) {
+                            return true;
+                        }
+                    }
+                } else {
+                    // King logic: scan along the diagonal
+                    let r = row + dr;
+                    let c = col + dc;
+                    let foundOpponent = false;
+                    while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        const idx = r * 8 + c;
+                        const sq = state.board[idx];
+                        if (!foundOpponent) {
+                            if (
+                                (turn === 1 && (sq === 2 || sq === 4)) ||
+                                (turn === 2 && (sq === 1 || sq === 3))
+                            ) {
+                                foundOpponent = true;
+                            } else if (sq !== 0) {
+                                break;
+                            }
+                        } else {
+                            if (sq === 0) {
+                                return true;
+                            } else {
+                                break;
+                            }
+                        }
+                        r += dr;
+                        c += dc;
                     }
                 }
+            }
+        }
+    }
+    return false;
+}
+
+// Apply a move in chess notation (e.g., e3-d4) for the given turn (1=red, 2=black)
+function applyMove(state, move, turn) {
+    // Parse move: e3-d4
+    const m = move.match(/^([a-h][1-8])-([a-h][1-8])$/i);
+    if (!m) return false;
+    const [from, to] = [m[1], m[2]];
+    const fromIdx = algebraicToIndex(from);
+    const toIdx = algebraicToIndex(to);
+
+    // Debug: log move and indices
+    console.log(`applyMove: move=${move}, from=${from} (${fromIdx}), to=${to} (${toIdx}), piece at fromIdx=${state.board[fromIdx]}, piece at toIdx=${state.board[toIdx]}, turn=${turn}`);
+
+    if (fromIdx === null || toIdx === null) return false;
+
+    // Check piece ownership
+    const piece = state.board[fromIdx];
+    if (turn === 1 && piece !== 1 && piece !== 3) return false;
+    if (turn === 2 && piece !== 2 && piece !== 4) return false;
+
+    const dir = turn === 1 ? -1 : 1;
+    const fromRow = Math.floor(fromIdx / 8);
+    const fromCol = fromIdx % 8;
+    const toRow = Math.floor(toIdx / 8);
+    const toCol = toIdx % 8;
+    if (state.board[toIdx] !== 0) return false;
+
+    // Simple move (one diagonal step)
+    if ((piece === 1 || piece === 2) && Math.abs(toCol - fromCol) === 1 && toRow - fromRow === dir) {
+        // Move piece
+        state.board[toIdx] = piece;
+        state.board[fromIdx] = 0;
+        // King promotion
+        if (turn === 1 && toRow === 0 && piece === 1) state.board[toIdx] = 3;
+        if (turn === 2 && toRow === 7 && piece === 2) state.board[toIdx] = 4;
+        return true;
+    }
+    // Jump move (two diagonal steps)
+    if ((piece === 1 || piece === 2) && Math.abs(toCol - fromCol) === 2 && toRow - fromRow === 2 * dir) {
+        const jumpedRow = fromRow + dir;
+        const jumpedCol = fromCol + (toCol - fromCol) / 2;
+        const jumpedIdx = jumpedRow * 8 + jumpedCol;
+        const jumpedPiece = state.board[jumpedIdx];
+        // Check that jumped piece is opponent's
+        if (
+            (turn === 1 && (jumpedPiece === 2 || jumpedPiece === 4)) ||
+            (turn === 2 && (jumpedPiece === 1 || jumpedPiece === 3))
+        ) {
+            // Remove jumped piece
+            state.board[jumpedIdx] = 0;
+            // Move piece
+            state.board[toIdx] = piece;
+            state.board[fromIdx] = 0;
+            // King promotion
+            if (turn === 1 && toRow === 0 && piece === 1) state.board[toIdx] = 3;
+            if (turn === 2 && toRow === 7 && piece === 2) state.board[toIdx] = 4;
+            return true;
+        }
+    }
+    // King move/capture (multi-square)
+    if (piece === 3 || piece === 4) {
+        const dr = Math.sign(toRow - fromRow);
+        const dc = Math.sign(toCol - fromCol);
+        if (Math.abs(toRow - fromRow) === Math.abs(toCol - fromCol)) {
+            let r = fromRow + dr;
+            let c = fromCol + dc;
+            let foundOpponent = false;
+            let opponentIdx = null;
+            while (r !== toRow || c !== toCol) {
+                const idx = r * 8 + c;
+                const sq = state.board[idx];
+                if (!foundOpponent) {
+                    if (
+                        (turn === 1 && (sq === 2 || sq === 4)) ||
+                        (turn === 2 && (sq === 1 || sq === 3))
+                    ) {
+                        foundOpponent = true;
+                        opponentIdx = idx;
+                    } else if (sq !== 0) {
+                        break;
+                    }
+                } else {
+                    if (sq === 0 && (r === toRow && c === toCol)) {
+                        // Valid king capture
+                        state.board[opponentIdx] = 0;
+                        state.board[toIdx] = piece;
+                        state.board[fromIdx] = 0;
+                        return true;
+                    } else if (sq !== 0) {
+                        break;
+                    }
+                }
+                r += dr;
+                c += dc;
+            }
+        }
+        // Simple king move (no capture)
+        if (Math.abs(toRow - fromRow) === Math.abs(toCol - fromCol)) {
+            let r = fromRow + dr;
+            let c = fromCol + dc;
+            let blocked = false;
+            while (r !== toRow || c !== toCol) {
+                const idx = r * 8 + c;
+                if (state.board[idx] !== 0) {
+                    blocked = true;
+                    break;
+                }
+                r += dr;
+                c += dc;
+            }
+            if (!blocked) {
+                state.board[toIdx] = piece;
+                state.board[fromIdx] = 0;
+                return true;
             }
         }
     }
@@ -613,74 +760,6 @@ function getGameOverText(state) {
     if (red === 0) return "Black wins!";
     if (black === 0) return "Red wins!";
     return "Game over!";
-}
-
-// Apply a move in chess notation (e.g., e3-d4) for the given turn (1=red, 2=black)
-function applyMove(state, move, turn) {
-    // Parse move: e3-d4
-    const m = move.match(/^([a-h][1-8])-([a-h][1-8])$/i);
-    if (!m) return false;
-    const [from, to] = [m[1], m[2]];
-    const fromIdx = algebraicToIndex(from);
-    const toIdx = algebraicToIndex(to);
-
-    // Debug: log move and indices
-    console.log(`applyMove: move=${move}, from=${from} (${fromIdx}), to=${to} (${toIdx}), piece at fromIdx=${state.board[fromIdx]}, piece at toIdx=${state.board[toIdx]}, turn=${turn}`);
-
-    if (fromIdx === null || toIdx === null) return false;
-
-    // Check piece ownership
-    const piece = state.board[fromIdx];
-    if (turn === 1 && piece !== 1 && piece !== 3) return false;
-    if (turn === 2 && piece !== 2 && piece !== 4) return false;
-
-    // Allow simple forward moves and single jumps (no multi-jump, no kings for now)
-    const dir = turn === 1 ? -1 : 1;
-    const fromRow = Math.floor(fromIdx / 8);
-    const fromCol = fromIdx % 8;
-    const toRow = Math.floor(toIdx / 8);
-    const toCol = toIdx % 8;
-    if (state.board[toIdx] !== 0) return false;
-
-    // Simple move (one diagonal step)
-    if (Math.abs(toCol - fromCol) === 1 && toRow - fromRow === dir) {
-        // Move piece
-        state.board[toIdx] = piece;
-        state.board[fromIdx] = 0;
-
-        // King promotion
-        if (turn === 1 && toRow === 0 && piece === 1) state.board[toIdx] = 3;
-        if (turn === 2 && toRow === 7 && piece === 2) state.board[toIdx] = 4;
-
-        return true;
-    }
-
-    // Jump move (two diagonal steps)
-    if (Math.abs(toCol - fromCol) === 2 && toRow - fromRow === 2 * dir) {
-        const jumpedRow = fromRow + dir;
-        const jumpedCol = fromCol + (toCol - fromCol) / 2;
-        const jumpedIdx = jumpedRow * 8 + jumpedCol;
-        const jumpedPiece = state.board[jumpedIdx];
-        // Check that jumped piece is opponent's
-        if (
-            (turn === 1 && (jumpedPiece === 2 || jumpedPiece === 4)) ||
-            (turn === 2 && (jumpedPiece === 1 || jumpedPiece === 3))
-        ) {
-            // Remove jumped piece
-            state.board[jumpedIdx] = 0;
-            // Move piece
-            state.board[toIdx] = piece;
-            state.board[fromIdx] = 0;
-
-            // King promotion
-            if (turn === 1 && toRow === 0 && piece === 1) state.board[toIdx] = 3;
-            if (turn === 2 && toRow === 7 && piece === 2) state.board[toIdx] = 4;
-
-            return true;
-        }
-    }
-
-    return false;
 }
 
 // Convert algebraic notation (e.g., e3) to board index (0-63)
@@ -802,8 +881,8 @@ function buildCheckersPrompt(state, color, mistakeLastTurn = false) {
     for (let r = 0; r < 8; r++) {
         ascii += (8 - r) + " |";
         for (let c = 0; c < 8; c++) {
-            const idx = r * 8 + c;
-            ascii += symbols[state.board[idx]];
+            const i = r * 8 + c;
+            ascii += symbols[state.board[i]];
         }
         ascii += "| " + (8 - r) + "\n";
     }
