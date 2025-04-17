@@ -293,11 +293,18 @@ main {
     background: #e53e3e;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
     border: 2px solid #fff;
+    /* Add transition for smooth movement */
+    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
 }
 
 .piece.black {
     background: #222;
     border: 2px solid #e2e8f0;
+}
+
+/* Style for captured pieces (optional, for fading out) */
+.piece.captured {
+    opacity: 0;
 }
 
 .piece.king {

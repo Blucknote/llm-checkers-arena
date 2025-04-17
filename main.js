@@ -430,17 +430,24 @@ function renderBoard(boardDiv, state) {
             const i = r * 8 + c;
             const square = document.createElement("div");
             square.className = "square " + ((r + c) % 2 === 0 ? "light" : "dark");
-            // Only render pieces on dark squares
+            square.dataset.index = i; // Add data attribute for index
+            square.classList.add(`square-${i}`); // Add class for easy selection
+
+            // Only render pieces on dark squares initially
             if ((r + c) % 2 === 1) {
                 const piece = state.board[i];
-                if (piece === 1 || piece === 3) {
+                if (piece !== 0) {
                     const el = document.createElement("div");
-                    el.className = "piece" + (piece === 3 ? " king" : "");
-                    el.style.background = "#e53e3e";
-                    square.appendChild(el);
-                } else if (piece === 2 || piece === 4) {
-                    const el = document.createElement("div");
-                    el.className = "piece black" + (piece === 4 ? " king" : "");
+                    el.className = "piece";
+                    el.dataset.index = i; // Add data attribute for index
+                    el.dataset.pieceType = piece; // Add data attribute for piece type
+                    if (piece === 1 || piece === 3) {
+                        el.style.background = "#e53e3e";
+                        if (piece === 3) el.classList.add("king");
+                    } else if (piece === 2 || piece === 4) {
+                        el.classList.add("black");
+                        if (piece === 4) el.classList.add("king");
+                    }
                     square.appendChild(el);
                 }
             }
@@ -454,10 +461,95 @@ function renderBoard(boardDiv, state) {
     boardDiv.appendChild(legendContainer);
 }
 
+/**
+ * Animates a piece move and captured pieces.
+ * @param {HTMLElement} boardDiv - The board element.
+ * @param {object} oldState - The state before the move.
+ * @param {object} newState - The state after the move.
+ * @param {string} move - The move string (e.g., "e3-d4").
+ */
+async function animateMove(boardDiv, oldState, newState, move) {
+    const m = move.match(/^([a-h][1-8])-([a-h][1-8])$/i);
+    if (!m) return; // Should not happen if applyMove was successful
+
+    const [from, to] = [m[1], m[2]];
+    const fromIdx = algebraicToIndex(from);
+    const toIdx = algebraicToIndex(to);
+
+    if (fromIdx === null || toIdx === null) return;
+
+    const movingPieceEl = boardDiv.querySelector(`.square-${fromIdx} .piece`);
+    if (!movingPieceEl) return; // Should not happen
+
+    const fromSquare = boardDiv.querySelector(`.square-${fromIdx}`);
+    const toSquare = boardDiv.querySelector(`.square-${toIdx}`);
+
+    if (!fromSquare || !toSquare) return;
+
+    // Calculate the translation needed
+    const fromRect = fromSquare.getBoundingClientRect();
+    const toRect = toSquare.getBoundingClientRect();
+    const translateX = toRect.left - fromRect.left;
+    const translateY = toRect.top - fromRect.top;
+
+    // Apply transform to start animation
+    movingPieceEl.style.transform = `translate(${translateX}px, ${translateY}px)`;
+
+    // Handle captured pieces
+    const capturedIndices = [];
+    for (let i = 0; i < 64; i++) {
+        if (oldState.board[i] !== 0 && newState.board[i] === 0 && i !== fromIdx && i !== toIdx) {
+            capturedIndices.push(i);
+        }
+    }
+
+    capturedIndices.forEach(idx => {
+        const capturedPieceEl = boardDiv.querySelector(`.square-${idx} .piece`);
+        if (capturedPieceEl) {
+            capturedPieceEl.classList.add("captured"); // Add class for fade-out
+            // Remove the element after the transition
+            capturedPieceEl.addEventListener("transitionend", () => {
+                capturedPieceEl.remove();
+            }, { once: true });
+        }
+    });
+
+    // Wait for the move animation to complete
+    await new Promise(resolve => {
+        movingPieceEl.addEventListener("transitionend", resolve, { once: true });
+    });
+
+    // Update the DOM after animation
+    // Remove the piece from the old square
+    movingPieceEl.remove();
+
+    // Create a new piece element for the new square with updated type (for king promotion)
+    const newPiece = document.createElement("div");
+    newPiece.className = "piece";
+    const newPieceType = newState.board[toIdx];
+    newPiece.dataset.index = toIdx;
+    newPiece.dataset.pieceType = newPieceType;
+
+    if (newPieceType === 1 || newPieceType === 3) {
+        newPiece.style.background = "#e53e3e";
+        if (newPieceType === 3) newPiece.classList.add("king");
+    } else if (newPieceType === 2 || newPieceType === 4) {
+        newPiece.classList.add("black");
+        if (newPieceType === 4) newPiece.classList.add("king");
+    }
+
+    // Append the new piece to the target square
+    toSquare.appendChild(newPiece);
+
+    // Reset transform (not strictly necessary if creating a new element, but good practice)
+    newPiece.style.transform = "";
+}
+
+
 function startGame(boardId, boardDiv, statusBar, selectors) {
     // Reset to initial state
     let state = getInitialBoardState();
-    renderBoard(boardDiv, state);
+    renderBoard(boardDiv, state); // Initial render
     statusBar.textContent = "Red's turn (bottom)";
     const wrapper = document.getElementById(`board-wrapper-${boardId}`);
     wrapper.dataset.state = JSON.stringify(state);
@@ -539,6 +631,8 @@ function startGame(boardId, boardDiv, statusBar, selectors) {
             let mistake = false;
             // Pass mistakeLastTurn to LLM
             const mistakeLastTurn = state.turn === 1 ? mistakeRedLastTurn : mistakeBlackLastTurn;
+            // Store the state before the move for animation
+            const oldState = JSON.parse(JSON.stringify(state));
             while (attempts < 3 && !valid) {
                 move = await getLLMMove(model, state, color, mistakeLastTurn);
                 if (!move) {
@@ -585,8 +679,8 @@ function startGame(boardId, boardDiv, statusBar, selectors) {
             if (mistake) {
                 statusBar.textContent = `${color} missed a mandatory capture!`;
             }
-            // Update UI
-            renderBoard(boardDiv, state);
+            // Update UI with animation
+            await animateMove(boardDiv, oldState, state, move);
             wrapper.dataset.state = JSON.stringify(state);
             // Next turn
             state.moveHistory.push({
@@ -614,7 +708,7 @@ function startGame(boardId, boardDiv, statusBar, selectors) {
             }
             state.turn = 3 - state.turn;
             renderMoveLog();
-            await sleep(700); // Small delay for UI
+            // await sleep(700); // Small delay for UI - removed, animation handles timing
         }
     }
     moveLoop();
