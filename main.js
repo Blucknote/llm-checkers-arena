@@ -146,8 +146,8 @@ function refreshAllModelSelectors() {
         // The ids are encoded in the container's child select ids
         const topId = container.dataset.topId;
         const bottomId = container.dataset.bottomId;
-        createModelSelector(container, topId);
-        createModelSelector(container, bottomId);
+        createModelSelector(container, topId, "Black Model (Top)");
+        createModelSelector(container, bottomId, "Red Model (Bottom)");
     });
 }
 
@@ -163,9 +163,9 @@ function addBoard() {
     selectors.className = "model-selectors";
     selectors.dataset.topId = `model-top-${boardCount}`;
     selectors.dataset.bottomId = `model-bottom-${boardCount}`;
-    // Custom model selectors with search
-    createModelSelector(selectors, `model-top-${boardCount}`);
-    createModelSelector(selectors, `model-bottom-${boardCount}`);
+    // Custom model selectors with search and color labels
+    createModelSelector(selectors, `model-top-${boardCount}`, "Black Model (Top)");
+    createModelSelector(selectors, `model-bottom-${boardCount}`, "Red Model (Bottom)");
 
     // If no models are available, show a visible warning
     if (
@@ -223,13 +223,24 @@ function addBoard() {
     wrapper.dataset.state = JSON.stringify(initialState);
 }
 
-function createModelSelector(container, selectId) {
+function createModelSelector(container, selectId, colorLabel) {
     // Wrapper for search + dropdown
     const wrapper = document.createElement("div");
     wrapper.className = "model-selector-wrapper";
     wrapper.style.display = "flex";
     wrapper.style.flexDirection = "column";
-    wrapper.style.width = "48%";
+    wrapper.style.flex = "1 1 0";
+    wrapper.style.minWidth = "0";
+
+    // Color label (e.g., Red Model / Black Model)
+    const colorDiv = document.createElement("div");
+    colorDiv.textContent = colorLabel;
+    colorDiv.style.fontWeight = "bold";
+    colorDiv.style.fontSize = "1.01em";
+    colorDiv.style.marginBottom = "0.14rem";
+    colorDiv.style.letterSpacing = "0.01em";
+    colorDiv.style.color = colorLabel.toLowerCase().includes("red") ? "#e53e3e" : "#222";
+    wrapper.appendChild(colorDiv);
 
     // Search input
     const label = document.createElement("label");
@@ -242,16 +253,14 @@ function createModelSelector(container, selectId) {
     const search = document.createElement("input");
     search.type = "text";
     search.className = "model-search";
+    search.id = selectId + "-search";
     search.placeholder = "Search models...";
     search.autocomplete = "off";
-    search.style.marginBottom = "0.3rem";
-    search.id = selectId + "-search";
 
-    // Dropdown
     const select = document.createElement("select");
     select.className = "model-select";
     select.id = selectId;
-    select.style.width = "100%";
+    select.style.marginBottom = "0";
 
     // Helper to render options based on search
     function renderOptions(filter = "") {

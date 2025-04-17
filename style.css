@@ -68,14 +68,39 @@ main {
     margin-bottom: 0.5rem;
     margin-top: 0.5rem;
     gap: 0.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .model-selector-wrapper {
     display: flex;
     flex-direction: column;
-    width: 48%;
-    border: 2px dashed #e53e3e !important;
-    background: #fffbe6 !important;
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1.5px solid #d1d5db;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 1rem 1.2rem 1.1rem 1.2rem;
+    margin-bottom: 0.2rem;
+    transition: box-shadow 0.2s, border 0.2s;
+}
+
+.model-selector-wrapper:focus-within {
+    border: 1.5px solid #4299e1;
+    box-shadow: 0 4px 16px rgba(66,153,225,0.10);
+}
+
+.model-selector-wrapper label {
+    margin-bottom: 0.18rem;
+    font-weight: 500;
+    color: #374151;
+    letter-spacing: 0.01em;
+}
+
+.model-selector-wrapper input,
+.model-selector-wrapper select {
+    margin-bottom: 0.32rem;
 }
 
 .model-search {
@@ -88,7 +113,6 @@ main {
     transition: border 0.2s;
     background: #f8fafc;
 }
-
 
 .model-select {
     width: 100%;
@@ -304,6 +328,15 @@ main {
         min-width: 0;
         max-width: 100vw;
         padding: 0.7rem;
+    }
+
+    .model-selectors {
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+    .model-selector-wrapper {
+        width: 100%;
+        min-width: 0;
     }
 
     .modal-content {
