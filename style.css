@@ -1,8 +1,13 @@
 body {
     margin: 0;
     font-family: system-ui, sans-serif;
-    background: #f6f6f6;
+    background: #fff;
     color: #222;
+}
+
+body.dark {
+    background: #1a202c;
+    color: #e2e8f0;
 }
 
 header {
@@ -13,6 +18,11 @@ header {
     color: #fff;
     padding: 1rem 2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dark header {
+    background: #2d3748;
+    color: #edf2f7;
 }
 
 .header-actions {
@@ -31,7 +41,16 @@ button {
     transition: background 0.2s;
 }
 
+.dark button {
+    background: #4299e1;
+    color: #fff;
+}
+
 button:hover {
+    background: #2b6cb0;
+}
+
+.dark button:hover {
     background: #2b6cb0;
 }
 
@@ -61,6 +80,11 @@ main {
     align-items: center;
 }
 
+.dark .board-wrapper {
+    background: #2d3748;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
 .model-selectors {
     width: 100%;
     display: flex;
@@ -75,20 +99,49 @@ main {
 .model-selector-wrapper {
     display: flex;
     flex-direction: column;
-    flex: 1 1 0;
+    flex: 1 0 auto;
     min-width: 0;
     border: 1.5px solid #d1d5db;
     background: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     padding: 1rem 1.2rem 1.1rem 1.2rem;
     margin-bottom: 0.2rem;
     transition: box-shadow 0.2s, border 0.2s;
 }
 
+.dark .model-selector-wrapper {
+    background: #1a202c;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+.dark .model-selector-wrapper label {
+    color: #e2e8f0;
+    /* Or another suitable light color */
+}
+
+.model-label-red {
+    color: #e53e3e;
+}
+
+.model-label-black {
+    color: #222;
+}
+
+.dark .model-label-red {
+    color: #fc8181;
+    /* Lighter red for dark mode */
+}
+
+.dark .model-label-black {
+    color: #e2e8f0;
+    /* Lighter color for dark mode, matching body text */
+}
+
 .model-selector-wrapper:focus-within {
     border: 1.5px solid #4299e1;
-    box-shadow: 0 4px 16px rgba(66,153,225,0.10);
+    box-shadow: 0 4px 16px rgba(66, 153, 225, 0.10);
 }
 
 .model-selector-wrapper label {
@@ -101,6 +154,13 @@ main {
 .model-selector-wrapper input,
 .model-selector-wrapper select {
     margin-bottom: 0.32rem;
+}
+
+.dark .model-selector-wrapper input,
+.dark .model-selector-wrapper select {
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    color: #e2e8f0;
 }
 
 .model-search {
@@ -166,6 +226,11 @@ main {
     user-select: none;
 }
 
+.dark .col-legend {
+    color: #e2e8f0;
+    /* Match dark mode body text */
+}
+
 .board-row {
     display: flex;
     flex-direction: row;
@@ -183,6 +248,11 @@ main {
     color: #2d3748;
     background: transparent;
     user-select: none;
+}
+
+.dark .row-legend {
+    color: #e2e8f0;
+    /* Match dark mode body text */
 }
 
 .checkers-board-row {
@@ -268,6 +338,11 @@ main {
     word-break: break-word;
 }
 
+.dark .move-log {
+    background: #2d3748;
+    color: #e2e8f0;
+}
+
 .move-log-red {
     color: #e53e3e;
     font-weight: bold;
@@ -289,6 +364,15 @@ main {
     align-items: center;
     justify-content: center;
     z-index: 100;
+}
+
+.dark .modal {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.dark .modal-content {
+    background: #2d3748;
+    color: #edf2f7;
 }
 
 .modal.hidden {
@@ -334,6 +418,7 @@ main {
         flex-direction: column;
         gap: 0.7rem;
     }
+
     .model-selector-wrapper {
         width: 100%;
         min-width: 0;

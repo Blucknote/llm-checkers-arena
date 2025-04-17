@@ -47,6 +47,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     apiKeyBtn.onclick = showApiKeyModal;
     headerActions.appendChild(apiKeyBtn);
 
+    // Theme toggle button
+    const themeToggleBtn = document.createElement("button");
+    themeToggleBtn.id = "theme-toggle-btn";
+    themeToggleBtn.onclick = () => toggleTheme(themeToggleBtn);
+    headerActions.appendChild(themeToggleBtn);
+
+    // Initialize theme after button is created
+    initTheme(themeToggleBtn);
+
     // Refresh Models button logic
     const refreshModelsBtn = document.getElementById("refresh-models-btn");
     refreshModelsBtn.onclick = async () => {
@@ -72,6 +81,70 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Load leaderboard
     renderLeaderboard();
 });
+
+// Theme utility functions
+function setTheme(theme) {
+    document.body.classList.toggle('dark', theme === 'dark');
+}
+
+// Gets the actual theme ('light' or 'dark') based on stored preference and system setting
+function getCurrentTheme() {
+    const storedTheme = localStorage.getItem('theme') || 'system'; // Default to system
+    if (storedTheme === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return storedTheme; // 'light' or 'dark'
+}
+
+function updateToggleIcon(toggleBtn) {
+    const storedTheme = localStorage.getItem('theme') || 'system';
+    if (storedTheme === 'light') {
+        toggleBtn.textContent = '🌞'; // Sun for light mode
+    } else if (storedTheme === 'dark') {
+        toggleBtn.textContent = '🌜'; // Moon for dark mode
+    } else {
+        toggleBtn.textContent = '🖥️'; // Computer for system mode
+    }
+}
+
+function initTheme(toggleBtn) {
+    const storedTheme = localStorage.getItem('theme') || 'system'; // Default to system
+    const currentActualTheme = getCurrentTheme();
+    setTheme(currentActualTheme); // Apply the initial theme based on stored/system preference
+
+    // Listen for system changes ONLY if the preference is 'system'
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        const currentStoredTheme = localStorage.getItem('theme') || 'system';
+        if (currentStoredTheme === 'system') {
+            setTheme(e.matches ? 'dark' : 'light');
+            // No need to update icon here, it stays '🖥️'
+        }
+    });
+
+    updateToggleIcon(toggleBtn); // Set the initial icon
+}
+
+function toggleTheme(toggleBtn) {
+    const storedTheme = localStorage.getItem('theme') || 'system';
+    let newTheme;
+
+    // Cycle: light -> dark -> system -> light
+    if (storedTheme === 'light') {
+        newTheme = 'dark';
+    } else if (storedTheme === 'dark') {
+        newTheme = 'system';
+    } else { // storedTheme === 'system'
+        newTheme = 'light';
+    }
+
+    localStorage.setItem('theme', newTheme);
+
+    // Apply the theme based on the new setting
+    const currentActualTheme = getCurrentTheme(); // Recalculate based on new setting
+    setTheme(currentActualTheme);
+
+    updateToggleIcon(toggleBtn); // Update icon to reflect the new setting
+}
 
 // Helper to set status message
 function setModelsStatus(msg, color = "#555") {
@@ -167,23 +240,6 @@ function addBoard() {
     createModelSelector(selectors, `model-top-${boardCount}`, "Black Model (Top)");
     createModelSelector(selectors, `model-bottom-${boardCount}`, "Red Model (Bottom)");
 
-    // If no models are available, show a visible warning
-    if (
-        !availableModels.length ||
-        (availableModels.length === 1 && (availableModels[0].id === "" || availableModels[0].name.startsWith("No models") || availableModels[0].name.startsWith("Failed")))
-    ) {
-        const warn = document.createElement("div");
-        warn.textContent = "No models available. Please check your OpenRouter API key.";
-        warn.style.color = "#b22222";
-        warn.style.background = "#fffbe6";
-        warn.style.border = "2px solid #b22222";
-        warn.style.padding = "0.5rem";
-        warn.style.margin = "0.5rem 0";
-        warn.style.fontWeight = "bold";
-        warn.style.textAlign = "center";
-        selectors.appendChild(warn);
-    }
-
     // Board placeholder
     const boardDiv = document.createElement("div");
     boardDiv.className = "";
@@ -211,6 +267,24 @@ function addBoard() {
 
     // Assemble
     wrapper.appendChild(selectors);
+
+    // If no models are available, show a visible warning
+    if (
+        !availableModels.length ||
+        (availableModels.length === 1 && (availableModels[0].id === "" || availableModels[0].name.startsWith("No models") || availableModels[0].name.startsWith("Failed")))
+    ) {
+        const warn = document.createElement("div");
+        warn.textContent = "No models available. Please check your OpenRouter API key.";
+        warn.style.color = "#b22222";
+        warn.style.background = "#fffbe6";
+        warn.style.border = "2px solid #b22222";
+        warn.style.padding = "0.5rem";
+        warn.style.margin = "0.5rem 0";
+        warn.style.fontWeight = "bold";
+        warn.style.textAlign = "center";
+        wrapper.appendChild(warn);
+    }
+
     wrapper.appendChild(boardDiv);
     wrapper.appendChild(moveLogDiv);
     wrapper.appendChild(controls);
@@ -239,7 +313,7 @@ function createModelSelector(container, selectId, colorLabel) {
     colorDiv.style.fontSize = "1.01em";
     colorDiv.style.marginBottom = "0.14rem";
     colorDiv.style.letterSpacing = "0.01em";
-    colorDiv.style.color = colorLabel.toLowerCase().includes("red") ? "#e53e3e" : "#222";
+    colorDiv.classList.add(colorLabel.toLowerCase().includes("red") ? "model-label-red" : "model-label-black");
     wrapper.appendChild(colorDiv);
 
     // Search input
